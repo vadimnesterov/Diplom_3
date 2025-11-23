@@ -1,4 +1,3 @@
-from data.user_data import TEST_USER_EMAIL, TEST_USER_PASSWORD, TEST_USER_NAME
 from pages.login_page import LoginPage
 from pages.register_page import RegisterPage
 from pages.constructor_page import ConstructorPage
@@ -8,7 +7,7 @@ from locators.constructor_page_locators import ConstructorPageLocators
 class TestAuthFlow:
     """Тесты авторизации и регистрации пользователя."""
 
-    def test_login_existing_user_success(self, driver):
+    def test_login_existing_user_success(self, driver, api_user):
         """
         Позитивный сценарий:
         существующий пользователь может войти в систему через форму логина.
@@ -16,8 +15,8 @@ class TestAuthFlow:
         login_page = LoginPage(driver)
         login_page.open_login()
 
-        login_page.set_email(TEST_USER_EMAIL)
-        login_page.set_password(TEST_USER_PASSWORD)
+        login_page.set_email(api_user["email"])
+        login_page.set_password(api_user["password"])
         login_page.submit_login()
 
         # После успешного логина ожидаем, что открылся конструктор
@@ -32,10 +31,9 @@ class TestAuthFlow:
         register_page = RegisterPage(driver)
         register_page.open_register()
 
-        # Используем фиксированный email — если такой уже есть,
-        # тест всё равно проверяет именно ошибку короткого пароля
-        register_page.set_name(TEST_USER_NAME)
-        register_page.set_email(TEST_USER_EMAIL)
+        # Данные не завязаны на существующего пользователя
+        register_page.set_name("TestUser")
+        register_page.set_email("shortpass@example.com")
         register_page.set_password("123")  # заведомо короткий пароль
         register_page.submit_register()
 

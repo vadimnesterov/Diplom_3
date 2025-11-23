@@ -7,24 +7,20 @@ from data.urls import MAIN_PAGE
 from helpers.user_api_helper import UserAPIHelper
 
 
-
 @pytest.fixture(params=["chrome", "firefox"])
 def driver(request):
     """Запуск тестов в Chrome и Firefox."""
-
     browser = request.param
 
     if browser == "chrome":
         options = ChromeOptions()
         options.add_argument("--window-size=1920,1080")
         web_driver = webdriver.Chrome(options=options)
-
     elif browser == "firefox":
         options = FirefoxOptions()
         options.set_preference("layout.css.devPixelsPerPx", "1.0")
         web_driver = webdriver.Firefox(options=options)
         web_driver.set_window_size(1920, 1080)
-
     else:
         raise ValueError(f"Неизвестный браузер: {browser}")
 
@@ -43,5 +39,4 @@ def api_user():
     Возвращает словарь с полями name, password, email.
     """
     helper = UserAPIHelper()
-    user_data = helper.create_test_user()
-    return user_data
+    return helper.create_test_user()

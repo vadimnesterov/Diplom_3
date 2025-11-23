@@ -1,39 +1,35 @@
-from data.user_data import TEST_USER_EMAIL, TEST_USER_PASSWORD
 from pages.login_page import LoginPage
 from pages.constructor_page import ConstructorPage
 from pages.order_modal import OrderModal
-from locators.constructor_page_locators import ConstructorPageLocators
 
 
 class TestOrderCreation:
     """Тесты оформления заказа."""
 
-    def test_create_order_authorized_user(self, driver):
+    def test_create_order_authorized_user(self, driver, api_user):
         """
         Авторизованный пользователь может оформить заказ:
-        открывается модальная страница с номером заказа.
+        открывается модальное окно с номером заказа.
         """
         # Логинимся
         login_page = LoginPage(driver)
         login_page.open_login()
-        login_page.set_email(TEST_USER_EMAIL)
-        login_page.set_password(TEST_USER_PASSWORD)
+        login_page.set_email(api_user["email"])
+        login_page.set_password(api_user["password"])
         login_page.submit_login()
 
         # Переходим в конструктор (на всякий случай)
         constructor_page = ConstructorPage(driver)
         constructor_page.open_constructor()
 
-        # Нажимаем 'Оформить заказ'
+        # Оформляем заказ
         constructor_page.click_order_button()
 
-        # Проверяем модальную страницу заказа
         order_modal = OrderModal(driver)
         assert order_modal.is_open()
-
         order_number = order_modal.get_order_number()
         assert order_number is not None
-        assert len(order_number.strip()) > 0
+        assert order_number != ""
 
         order_modal.close()
 

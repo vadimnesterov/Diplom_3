@@ -2,8 +2,6 @@ import random
 import string
 
 
-
-
 class CommonApiHelper:
     """Базовый помощник для API."""
 
