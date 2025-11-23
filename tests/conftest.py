@@ -4,6 +4,8 @@ from selenium.webdriver.chrome.options import Options as ChromeOptions
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
 
 from data.urls import MAIN_PAGE
+from helpers.user_api_helper import UserAPIHelper
+
 
 
 @pytest.fixture(params=["chrome", "firefox"])
@@ -32,3 +34,14 @@ def driver(request):
     yield web_driver
 
     web_driver.quit()
+
+
+@pytest.fixture
+def api_user():
+    """
+    Создаёт тестового пользователя через API.
+    Возвращает словарь с полями name, password, email.
+    """
+    helper = UserAPIHelper()
+    user_data = helper.create_test_user()
+    return user_data
