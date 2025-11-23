@@ -1,19 +1,24 @@
-from data.urls import PROFILE_PAGE
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
+
+from pages.base_page import BasePage
 from locators.profile_page_locators import ProfilePageLocators
-from .base_page import BasePage
 
 
 class ProfilePage(BasePage):
-    """Страница личного кабинета."""
-
-    def open_profile(self):
-        """Открыть страницу профиля по прямой ссылке."""
-        self.open(PROFILE_PAGE)
+    """Страница профиля авторизованного пользователя."""
 
     def is_profile_open(self) -> bool:
-        """Проверить, что страница профиля открыта."""
-        return self.is_visible(ProfilePageLocators.PROFILE_HEADER)
+        """Проверить, что открыта страница профиля."""
 
-    def click_logout(self):
-        """Нажать кнопку 'Выход'."""
-        self.click(ProfilePageLocators.LOGOUT_BUTTON)
+        # 1. Ждём, что мы на URL профиля
+        try:
+            WebDriverWait(self.driver, 10).until(
+                EC.url_contains("/account/profile")
+            )
+        except TimeoutException:
+            return False
+
+        # 2. Кнопка «Выход» есть только на странице профиля
+        return self.is_visible(ProfilePageLocators.LOGOUT_BUTTON)

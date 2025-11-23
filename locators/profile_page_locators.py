@@ -2,10 +2,10 @@ from selenium.webdriver.common.by import By
 
 
 class ProfilePageLocators:
-    """Локаторы элементов на странице профиля."""
+    # Активная вкладка «Профиль» в аккаунте
+    PROFILE_HEADER = (By.XPATH, "//a[contains(@class,'Account_link_active') and text()='Профиль']")
 
-    # Заголовок "Профиль"
-    PROFILE_HEADER = (By.XPATH, "//a[@href='/account/profile' and contains(@class,'tab_tab_type_current')]")
+    NAME_INPUT = (By.XPATH, "//label[text()='Имя']/following-sibling::input")
+    EMAIL_INPUT = (By.XPATH, "//label[text()='Логин']/following-sibling::input")
 
-    # Кнопка "Выход"
     LOGOUT_BUTTON = (By.XPATH, "//button[text()='Выход']")

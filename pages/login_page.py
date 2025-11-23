@@ -1,35 +1,42 @@
-from data.urls import LOGIN_PAGE
-from locators.login_page_locators import LoginPageLocators
-from .base_page import BasePage
+from selenium.webdriver.common.by import By
+from pages.base_page import BasePage
+
+
+class LoginPageLocators:
+    EMAIL_FIELD = (By.XPATH, "//input[@name='name']")
+    PASSWORD_FIELD = (By.XPATH, "//input[@type='password']")
+
+    # Кнопка "Войти" — стабильный CSS локатор
+    LOGIN_BUTTON = (
+        By.CSS_SELECTOR,
+        "button.button_button__33qZ0.button_button_type_primary__1O7Bx.button_button_size_medium__3zxIa"
+    )
+
+    # Дублирующий локатор по тексту — fallback
+    LOGIN_BUTTON_TEXT = (By.XPATH, "//button[normalize-space()='Войти']")
+
+    # Кнопка перехода на страницу логина с главной
+    ENTER_ACCOUNT_BUTTON = (By.XPATH, "//p[text()='Личный Кабинет']")
+
+    # Кнопка перехода "Войти" на странице регистрации
+    ENTER_FROM_REGISTER = (By.XPATH, "//a[text()='Войти']")
 
 
 class LoginPage(BasePage):
-    """Страница логина."""
 
     def open_login(self):
-        """Открыть страницу логина."""
-        self.open(LOGIN_PAGE)
+        self.click(LoginPageLocators.ENTER_ACCOUNT_BUTTON)
 
-    def set_email(self, email: str):
-        """Заполнить поле email."""
-        self.type_text(LoginPageLocators.EMAIL_FIELD, email)
+    def set_email(self, email):
+        self.type(LoginPageLocators.EMAIL_FIELD, email)
 
-    def set_password(self, password: str):
-        """Заполнить поле пароля."""
-        self.type_text(LoginPageLocators.PASSWORD_FIELD, password)
+    def set_password(self, password):
+        self.type(LoginPageLocators.PASSWORD_FIELD, password)
 
     def submit_login(self):
-        """Нажать кнопку 'Войти'."""
-        self.click(LoginPageLocators.LOGIN_BUTTON)
-
-    def go_to_register(self):
-        """Перейти по ссылке 'Зарегистрироваться'."""
-        self.click(LoginPageLocators.REGISTER_LINK)
-
-    def go_to_forgot_password(self):
-        """Перейти по ссылке 'Восстановить пароль'."""
-        self.click(LoginPageLocators.FORGOT_PASSWORD_LINK)
-
-    def get_error_message(self) -> str:
-        """Получить текст ошибки авторизации."""
-        return self.get_text(LoginPageLocators.ERROR_MESSAGE)
+        # 1 попытка — клик по стабильному CSS
+        try:
+            self.click(LoginPageLocators.LOGIN_BUTTON)
+        except Exception:
+            # fallback
+            self.click(LoginPageLocators.LOGIN_BUTTON_TEXT)
