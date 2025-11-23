@@ -16,6 +16,10 @@ class BasePage:
         self.driver = driver
         self.wait = WebDriverWait(driver, 10)
 
+    def open(self, url):
+        """SAFE: открыть URL."""
+        self.driver.get(url)
+
     # ---------------- WAITERS ----------------
 
     def wait_for_overlay_to_disappear(self, timeout: int = 10):
