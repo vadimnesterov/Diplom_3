@@ -16,11 +16,13 @@ def driver(request):
         options = ChromeOptions()
         options.add_argument("--window-size=1920,1080")
         web_driver = webdriver.Chrome(options=options)
+
     elif browser == "firefox":
         options = FirefoxOptions()
         options.set_preference("layout.css.devPixelsPerPx", "1.0")
         web_driver = webdriver.Firefox(options=options)
         web_driver.set_window_size(1920, 1080)
+
     else:
         raise ValueError(f"Неизвестный браузер: {browser}")
 
