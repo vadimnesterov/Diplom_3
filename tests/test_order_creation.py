@@ -1,3 +1,5 @@
+# tests/test_order_creation.py v1.1
+
 import allure
 
 from pages.login_page import LoginPage
@@ -11,7 +13,7 @@ class TestOrderFeed:
         "1. Авторизация пользователя\n"
         "2. Переход в ленту заказов\n"
         "3. Сохранение значения счётчика \"Выполнено за всё время\"\n"
-        "4. Создание заказа через UI\n"
+        "4. Возврат в конструктор и создание заказа через UI\n"
         "5. Повторный переход в ленту заказов\n"
         "6. Проверка, что счётчик увеличился"
     )
@@ -24,22 +26,23 @@ class TestOrderFeed:
         login_page.submit_login()
 
         main_page = MainPage(driver)
+        feed_page = OrderFeedPage(driver)
 
         # Переход в ленту заказов
         main_page.click_order_feed()
-        feed_page = OrderFeedPage(driver)
         assert feed_page.is_order_feed_page_loaded(), "Страница ленты заказов не загрузилась."
 
         # Сохранение исходного значения счётчика
         initial_total = feed_page.get_total_orders_count()
 
-        # Создание заказа через UI
+        # Возврат на главную (конструктор) и создание заказа через UI
+        main_page.click_constructor()
         order_number = main_page.create_order_ui()
         assert order_number is not None, "Не удалось получить номер заказа."
-        assert order_number != "9999", "Получен временный номер заказа 9999."
+        assert order_number != "9999", "Получен временный номер заказа 9999 вместо финального."
 
-        # Переход на страницу /feed через URL (без клика по шапке, чтобы избежать перекрытия модалкой)
-        driver.get(f"{MainPage.BASE_URL}feed")
+        # Снова переходим в ленту заказов через шапку
+        main_page.click_order_feed()
         assert feed_page.is_order_feed_page_loaded(), "Страница ленты заказов не загрузилась после оформления заказа."
 
         # Ожидание обновления счётчика
@@ -61,7 +64,7 @@ class TestOrderFeed:
         "1. Авторизация пользователя\n"
         "2. Переход в ленту заказов\n"
         "3. Сохранение значения счётчика \"Выполнено за сегодня\"\n"
-        "4. Создание заказа через UI\n"
+        "4. Возврат в конструктор и создание заказа через UI\n"
         "5. Повторный переход в ленту заказов\n"
         "6. Проверка, что дневной счётчик увеличился"
     )
@@ -74,22 +77,23 @@ class TestOrderFeed:
         login_page.submit_login()
 
         main_page = MainPage(driver)
+        feed_page = OrderFeedPage(driver)
 
         # Переход в ленту заказов
         main_page.click_order_feed()
-        feed_page = OrderFeedPage(driver)
         assert feed_page.is_order_feed_page_loaded(), "Страница ленты заказов не загрузилась."
 
         # Сохранение исходного значения дневного счётчика
         initial_today = feed_page.get_today_orders_count()
 
-        # Создание заказа через UI
+        # Возврат на главную (конструктор) и создание заказа через UI
+        main_page.click_constructor()
         order_number = main_page.create_order_ui()
         assert order_number is not None, "Не удалось получить номер заказа."
-        assert order_number != "9999", "Получен временный номер заказа 9999."
+        assert order_number != "9999", "Получен временный номер заказа 9999 вместо финального."
 
-        # Переход на страницу /feed через URL
-        driver.get(f"{MainPage.BASE_URL}feed")
+        # Снова переходим в ленту заказов через шапку
+        main_page.click_order_feed()
         assert feed_page.is_order_feed_page_loaded(), "Страница ленты заказов не загрузилась после оформления заказа."
 
         # Ожидание обновления дневного счётчика
@@ -109,8 +113,8 @@ class TestOrderFeed:
     @allure.title('После оформления заказа его номер появляется в разделе "В работе"')
     @allure.description(
         "1. Авторизация пользователя\n"
-        "2. Создание заказа через UI\n"
-        "3. Переход в ленту заказов\n"
+        "2. Создание заказа через UI с главной страницы (конструктор)\n"
+        "3. Переход в ленту заказов через шапку\n"
         "4. Проверка, что номер заказа присутствует в блоке \"В работе\""
     )
     def test_order_number_appears_in_in_progress_block(self, driver, api_user):
@@ -124,15 +128,18 @@ class TestOrderFeed:
         main_page = MainPage(driver)
         feed_page = OrderFeedPage(driver)
 
+        # На всякий случай активируем конструктор
+        main_page.click_constructor()
+
         # Создание заказа через UI
         order_number = main_page.create_order_ui()
         assert order_number is not None, "Не удалось получить номер заказа."
-        assert order_number != "9999", "Получен временный номер заказа 9999."
+        assert order_number != "9999", "Получен временный номер заказа 9999 вместо финального."
 
         normalized_number = feed_page.normalize_order_number(order_number)
 
-        # Переход на страницу /feed
-        driver.get(f"{MainPage.BASE_URL}feed")
+        # Переход в ленту заказов через шапку
+        main_page.click_order_feed()
         assert feed_page.is_order_feed_page_loaded(), "Страница ленты заказов не загрузилась."
 
         # Ожидание появления номера в блоке «В работе»
