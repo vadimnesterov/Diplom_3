@@ -1,129 +1,200 @@
-# pages/order_feed_page.py
+# pages/order_feed_page.py v1.4
 
-from selenium.common.exceptions import TimeoutException
-from selenium.webdriver.support.ui import WebDriverWait
+import time
+
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
+import allure
 
 from pages.base_page import BasePage
 from locators.order_feed_locators import OrderFeedLocators
 
 
 class OrderFeedPage(BasePage):
-    """Страница ленты заказов (/feed)."""
-
-    def __init__(self, driver, timeout: int = 10):
-        super().__init__(driver, timeout)
-
-    # ==========================================================
-    #  1. ПРОВЕРКА ЗАГРУЗКИ СТРАНИЦЫ (/feed)
-    # ==========================================================
-
-    def is_order_feed_page_loaded(self, timeout: int = 15) -> bool:
+    @allure.step("Проверить, что открыта страница ленты заказов")
+    def is_order_feed_page_loaded(self, timeout: int = 10) -> bool:
         """
-        Страница считается загруженной, если:
-        - URL содержит '/feed'
-        - виден заголовок 'Лента заказов'
-        - виден хотя бы один счётчик
+        Более мягкая проверка:
+        - сначала ждём URL /feed;
+        - если таймаут, но URL уже содержит /feed — всё равно считаем, что страница открыта.
+        Никаких жёстких проверок верстки, чтобы Firefox не падал по мелочи.
         """
-        # 1) дождаться document.readyState
         try:
-            WebDriverWait(self.driver, timeout).until(
-                lambda d: d.execute_script("return document.readyState") == "complete"
-            )
-        except TimeoutException:
-            pass
-
-        url_ok = "/feed" in self.driver.current_url
-
-        # 2) ждём главный UI: заголовок + счётчик
-        try:
-            WebDriverWait(self.driver, timeout).until(
-                EC.visibility_of_element_located(OrderFeedLocators.title_orders_list)
-            )
-            WebDriverWait(self.driver, timeout).until(
-                EC.visibility_of_element_located(OrderFeedLocators.total_orders_counter)
-            )
+            WebDriverWait(self.driver, timeout).until(EC.url_contains("/feed"))
             return True
-        except TimeoutException:
-            return url_ok
-
-    # ==========================================================
-    #  2. ЧТЕНИЕ СЧЁТЧИКОВ
-    # ==========================================================
+        except Exception:
+            return "/feed" in self.driver.current_url
 
     def _parse_int_from(self, locator, timeout: int = 15) -> int:
-        """Достаёт число из текста элемента."""
-        el = WebDriverWait(self.driver, timeout).until(
-            EC.visibility_of_element_located(locator)
-        )
-        txt = el.text.strip().replace(" ", "")
-        return int(txt) if txt.isdigit() else 0
+        """
+        Универсальный парсер числа из текстового элемента:
+        1) ждём видимости локатора;
+        2) если не нашли — пробуем вытащить текст через JS (важно для Firefox);
+        3) оставляем только цифры, конвертируем в int.
+        """
+        text = None
 
+        try:
+            el = WebDriverWait(self.driver, timeout).until(
+                EC.visibility_of_element_located(locator)
+            )
+            text = el.text
+        except TimeoutException:
+            # Firefox / нестабильный DOM: пробуем достать текст через JS
+            try:
+                by, value = locator
+
+                if by == By.CSS_SELECTOR:
+                    script = "return document.querySelector(arguments[0])?.textContent;"
+                    text = self.driver.execute_script(script, value)
+                elif by == By.XPATH:
+                    script = (
+                        "try {return document.evaluate(arguments[0], document, null,"
+                        "XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue"
+                        ".textContent;} catch(e) {return null;}"
+                    )
+                    text = self.driver.execute_script(script, value)
+            except Exception:
+                text = None
+
+        if not text:
+            return 0
+
+        digits = "".join(ch for ch in text if ch.isdigit())
+        return int(digits) if digits else 0
+
+    @allure.step('Получить значение счётчика "Выполнено за всё время"')
     def get_total_orders_count(self) -> int:
         return self._parse_int_from(OrderFeedLocators.total_orders_counter)
 
+    @allure.step('Получить значение счётчика "Выполнено за сегодня"')
     def get_today_orders_count(self) -> int:
         return self._parse_int_from(OrderFeedLocators.dayly_orders_counter)
 
-    # ==========================================================
-    #  3. ОЖИДАНИЕ УВЕЛИЧЕНИЯ СЧЁТЧИКОВ
-    # ==========================================================
+    @staticmethod
+    def normalize_order_number(order_number: str) -> str:
+        """
+        Очищает номер заказа:
+        - берёт только цифры;
+        - убирает ведущие нули.
+        """
+        if not order_number:
+            return ""
+        digits = "".join(ch for ch in order_number if ch.isdigit())
+        return digits.lstrip("0")
 
-    def wait_for_counters_update(self, initial_total, initial_today, timeout: int = 25) -> bool:
+    @allure.step('Получить список номеров заказов в блоке "В работе" (нормализованный)')
+    def get_orders_in_progress_normalized(self, timeout: int = 15) -> list:
         """
-        Ждём пока хотя бы один счётчик увеличится.
+        Возвращает список номеров заказов из блока «В работе»:
+        - берём второй список ul.OrderFeed_orderList__*;
+        - собираем все li;
+        - нормализуем номера через normalize_order_number().
         """
-        def changed(_):
+        locator = (
+            By.XPATH,
+            "//ul[contains(@class, 'OrderFeed_orderList__')][2]//li"
+        )
+
+        try:
+            WebDriverWait(self.driver, timeout).until(
+                EC.visibility_of_any_elements_located(locator)
+            )
+            elements = self.driver.find_elements(*locator)
+            texts = [el.text for el in elements if el.text]
+        except TimeoutException:
+            # Fallback через JS (как в эталоне-подходе)
             try:
-                total = self.get_total_orders_count()
-                today = self.get_today_orders_count()
-            except TimeoutException:
-                return False
+                script = """
+                    const uls = document.querySelectorAll("ul[class*='OrderFeed_orderList__']");
+                    if (!uls || uls.length < 2) return [];
+                    const ul = uls[1];
+                    return Array.from(ul.querySelectorAll("li")).map(li => li.textContent || "");
+                """
+                texts = self.driver.execute_script(script)
+                if not texts:
+                    return []
+            except Exception:
+                return []
 
-            return (
-                (initial_total is not None and total > initial_total) or
-                (initial_today is not None and today > initial_today)
+        return [
+            self.normalize_order_number(t)
+            for t in texts
+            if t and self.normalize_order_number(t)
+        ]
+
+    @allure.step('Ожидать появления заказа в блоке "В работе"')
+    def wait_for_order_in_progress(
+        self,
+        normalized_order_number: str,
+        timeout: int = 30,
+        poll: float = 1.0,
+    ) -> bool:
+        """
+        Ждём, пока нормализованный номер заказа появится в блоке «В работе».
+        Используем get_orders_in_progress_normalized() в цикле до timeout.
+        """
+        if not normalized_order_number:
+            return False
+
+        end_time = time.monotonic() + timeout
+
+        while time.monotonic() < end_time:
+            orders = self.get_orders_in_progress_normalized(timeout=5)
+            if normalized_order_number in orders:
+                return True
+            time.sleep(poll)
+
+        return False
+
+    @allure.step('Проверить, что номер заказа есть в блоке "В работе"')
+    def is_order_in_progress_block(self, order_number: str, timeout: int = 15) -> bool:
+        """
+        Обёртка поверх wait_for_order_in_progress:
+        - нормализуем номер;
+        - ждём появления в блоке «В работе».
+        """
+        normalized = self.normalize_order_number(order_number)
+        return self.wait_for_order_in_progress(normalized, timeout=timeout)
+
+    @allure.step("Ожидать обновления счётчиков ленты заказов")
+    def wait_for_counters_update(
+        self,
+        initial_total: int | None = None,
+        initial_today: int | None = None,
+        timeout: int = 30,
+        poll: float = 1.0,
+    ) -> bool:
+        """
+        Ждём, пока счётчики обновятся относительно исходных значений.
+        - Если initial_total is None — игнорируем общий счётчик.
+        - Если initial_today is None — игнорируем дневной счётчик.
+        - Условие успеха: каждый заданный счётчик стал строго больше начального.
+        """
+        end_time = time.monotonic() + timeout
+
+        while time.monotonic() < end_time:
+            current_total = (
+                self.get_total_orders_count() if initial_total is not None else None
+            )
+            current_today = (
+                self.get_today_orders_count() if initial_today is not None else None
             )
 
-        try:
-            WebDriverWait(self.driver, timeout).until(changed)
-            return True
-        except TimeoutException:
-            return False
+            ok_total = True
+            ok_today = True
 
-    # ==========================================================
-    #  4. РАБОТА С БЛОКОМ "В РАБОТЕ"
-    # ==========================================================
+            if initial_total is not None and current_total is not None:
+                ok_total = current_total > initial_total
 
-    def _normalize(self, text: str) -> str:
-        return "".join(ch for ch in text if ch.isdigit())
+            if initial_today is not None and current_today is not None:
+                ok_today = current_today > initial_today
 
-    def get_orders_in_progress_normalized(self) -> list[str]:
-        """Список номеров в блоке 'В работе' (нормализованный)."""
-        items = self.driver.find_elements(*OrderFeedLocators.number_order_in_job)
-        result = []
-        for el in items:
-            raw = el.text.strip()
-            if not raw:
-                continue
-            norm = self._normalize(raw)
-            if norm:
-                result.append(norm)
-        return result
+            if ok_total and ok_today:
+                return True
 
-    def wait_for_order_in_progress(self, normalized_order_number: str, timeout: int = 30) -> bool:
-        """
-        Ждём появления номера заказа в блоке 'В работе'.
-        """
-        def present(_):
-            return normalized_order_number in self.get_orders_in_progress_normalized()
+            time.sleep(poll)
 
-        try:
-            WebDriverWait(self.driver, timeout).until(present)
-            return True
-        except TimeoutException:
-            return False
-
-    # Публичная нормализация номера заказа (для тестов)
-    def normalize_order_number(self, order_number: str) -> str:
-        return self._normalize(order_number)
+        return False

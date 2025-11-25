@@ -1,4 +1,4 @@
-# pages/main_page.py
+# pages/main_page.py v1.3
 
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
@@ -10,6 +10,9 @@ from data.urls import MainUrl
 
 
 class MainPage(BasePage):
+    # Нужен для тестов: driver.get(f"{MainPage.BASE_URL}feed")
+    BASE_URL = MainUrl.MAIN_URL
+
     def __init__(self, driver):
         super().__init__(driver)
         self.url = MainUrl.MAIN_URL
@@ -56,6 +59,7 @@ class MainPage(BasePage):
 
     @allure.step("Перетащить ингредиент в конструктор")
     def drag_ingredient_to_constructor(self):
+        # На всякий случай закрываем все модалки перед DnD
         self.close_all_modals()
 
         self.wait_element_visible(MainPageLocators.fluorescent_bun)
@@ -95,7 +99,10 @@ class MainPage(BasePage):
     @allure.step("Получить номер заказа из модального окна (сырое значение)")
     def get_order_number_from_modal(self):
         try:
-            order_number_element = self.wait_element_visible(MainPageLocators.order_modal, timeout=10)
+            order_number_element = self.wait_element_visible(
+                MainPageLocators.order_modal,
+                timeout=10,
+            )
             return order_number_element.text
         except Exception:
             return None
@@ -114,9 +121,11 @@ class MainPage(BasePage):
     @allure.step("Получить финальный номер заказа из модального окна")
     def get_final_order_number(self, timeout: int = 15):
         try:
+            # Ждём, пока исчезнет временный номер 9999
             WebDriverWait(self.driver, timeout).until(
                 EC.invisibility_of_element_located(MainPageLocators.order_number_loading)
             )
+            # Затем ждём появление финального номера
             order_number_element = self.wait_element_visible(
                 MainPageLocators.order_number_final,
                 timeout=5,
@@ -125,59 +134,22 @@ class MainPage(BasePage):
         except Exception:
             return None
 
-    @allure.step("Создать заказ через UI")
+    @allure.step("Создать заказ через UI и получить финальный номер")
     def create_order_ui(self):
         """
-        Эталонная, максимально стабильная реализация:
-        1) перетаскиваем ингредиент
-        2) ждём появления счётчика ингредиента (доказательство, что добавился)
-        3) ждём кликабельности кнопки 'Оформить заказ'
-        4) кликаем
-        5) ждём исчезновения 9999 (временного номера)
-        6) ждём появления финального реального номера
-        7) закрываем модалку
-        8) возвращаем номер
+        Standalone-метод:
+        1) Открывает главную страницу
+        2) Перетаскивает ингредиент в конструктор
+        3) Жмёт 'Оформить заказ'
+        4) Возвращает финальный номер заказа (без гарантии формата)
         """
+        # Всегда гарантируем, что мы на главной
+        self.open()
 
-        # 1. Перетаскиваем ингредиент
         self.drag_ingredient_to_constructor()
+        self.click_order_button()
 
-        # 2. Проверяем что ингредиент действительно добавился
-        WebDriverWait(self.driver, 10).until(
-            EC.visibility_of_element_located(MainPageLocators.ingredient_counter)
-        )
+        order_number = self.get_final_order_number()
+        self.close_order_modal()
 
-        # 3. Кнопка "Оформить заказ" должна быть кликабельна
-        order_btn = WebDriverWait(self.driver, 10).until(
-            EC.element_to_be_clickable(MainPageLocators.order_button)
-        )
-
-        # 4. Кликаем
-        order_btn.click()
-
-        # 5. Ждём исчезновения временного номера 9999 (если он появляется)
-        try:
-            WebDriverWait(self.driver, 5).until(
-                EC.invisibility_of_element_located(MainPageLocators.order_number_loading)
-            )
-        except Exception:
-            pass  # иногда 9999 не успевает появиться — это нормально
-
-        # 6. Ждём появления финального номера заказа
-        final_number_el = WebDriverWait(self.driver, 20).until(
-            EC.visibility_of_element_located(MainPageLocators.order_number_final)
-        )
-        order_number = final_number_el.text.strip()
-
-        # 7. Закрываем модалку заказа
-        try:
-            close_btn = WebDriverWait(self.driver, 5).until(
-                EC.element_to_be_clickable(MainPageLocators.close_order_modal)
-            )
-            close_btn.click()
-        except Exception:
-            self.close_modal_by_overlay()
-
-        # 8. Возвращаем номер
         return order_number
-
