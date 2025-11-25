@@ -1,46 +1,149 @@
+import allure
+
 from pages.login_page import LoginPage
-from pages.constructor_page import ConstructorPage
-from pages.order_modal import OrderModal
+from pages.main_page import MainPage
+from pages.order_feed_page import OrderFeedPage
 
 
-class TestOrderCreation:
-    """Тесты оформления заказа."""
-
-    def test_create_order_authorized_user(self, driver, api_user):
-        """
-        Авторизованный пользователь может оформить заказ:
-        открывается модальное окно с номером заказа.
-        """
-        # Логинимся
+class TestOrderFeed:
+    @allure.title('После создания заказа счётчик "Выполнено за всё время" увеличивается')
+    @allure.description(
+        "1. Авторизация пользователя\n"
+        "2. Переход в ленту заказов\n"
+        "3. Сохранение значения счётчика \"Выполнено за всё время\"\n"
+        "4. Создание заказа через UI\n"
+        "5. Повторный переход в ленту заказов\n"
+        "6. Проверка, что счётчик увеличился"
+    )
+    def test_new_order_increases_total_counter(self, driver, api_user):
+        # Авторизация
         login_page = LoginPage(driver)
         login_page.open_login()
         login_page.set_email(api_user["email"])
         login_page.set_password(api_user["password"])
         login_page.submit_login()
 
-        # Переходим в конструктор (на всякий случай)
-        constructor_page = ConstructorPage(driver)
-        constructor_page.open_constructor()
+        main_page = MainPage(driver)
 
-        # Оформляем заказ
-        constructor_page.click_order_button()
+        # Переход в ленту заказов
+        main_page.click_order_feed()
+        feed_page = OrderFeedPage(driver)
+        assert feed_page.is_order_feed_page_loaded(), "Страница ленты заказов не загрузилась."
 
-        order_modal = OrderModal(driver)
-        assert order_modal.is_open()
-        order_number = order_modal.get_order_number()
-        assert order_number is not None
-        assert order_number != ""
+        # Сохранение исходного значения счётчика
+        initial_total = feed_page.get_total_orders_count()
 
-        order_modal.close()
+        # Создание заказа через UI
+        order_number = main_page.create_order_ui()
+        assert order_number is not None, "Не удалось получить номер заказа."
+        assert order_number != "9999", "Получен временный номер заказа 9999."
 
-    def test_create_order_unauthorized_user_redirects_to_login(self, driver):
-        """
-        Неавторизованный пользователь:
-        при попытке оформить заказ происходит переход на страницу логина.
-        """
-        constructor_page = ConstructorPage(driver)
-        constructor_page.open_constructor()
+        # Переход на страницу /feed через URL (без клика по шапке, чтобы избежать перекрытия модалкой)
+        driver.get(f"{MainPage.BASE_URL}feed")
+        assert feed_page.is_order_feed_page_loaded(), "Страница ленты заказов не загрузилась после оформления заказа."
 
-        constructor_page.click_order_button()
+        # Ожидание обновления счётчика
+        assert feed_page.wait_for_counters_update(
+            initial_total=initial_total,
+            initial_today=None,
+            timeout=20,
+        ), 'Счётчик "Выполнено за всё время" не обновился после создания заказа.'
 
-        assert "/login" in driver.current_url
+        # Контрольное сравнение
+        new_total = feed_page.get_total_orders_count()
+        assert new_total > initial_total, (
+            f'Счётчик "Выполнено за всё время" не увеличился. '
+            f"Было: {initial_total}, стало: {new_total}"
+        )
+
+    @allure.title('После создания заказа счётчик "Выполнено за сегодня" увеличивается')
+    @allure.description(
+        "1. Авторизация пользователя\n"
+        "2. Переход в ленту заказов\n"
+        "3. Сохранение значения счётчика \"Выполнено за сегодня\"\n"
+        "4. Создание заказа через UI\n"
+        "5. Повторный переход в ленту заказов\n"
+        "6. Проверка, что дневной счётчик увеличился"
+    )
+    def test_new_order_increases_today_counter(self, driver, api_user):
+        # Авторизация
+        login_page = LoginPage(driver)
+        login_page.open_login()
+        login_page.set_email(api_user["email"])
+        login_page.set_password(api_user["password"])
+        login_page.submit_login()
+
+        main_page = MainPage(driver)
+
+        # Переход в ленту заказов
+        main_page.click_order_feed()
+        feed_page = OrderFeedPage(driver)
+        assert feed_page.is_order_feed_page_loaded(), "Страница ленты заказов не загрузилась."
+
+        # Сохранение исходного значения дневного счётчика
+        initial_today = feed_page.get_today_orders_count()
+
+        # Создание заказа через UI
+        order_number = main_page.create_order_ui()
+        assert order_number is not None, "Не удалось получить номер заказа."
+        assert order_number != "9999", "Получен временный номер заказа 9999."
+
+        # Переход на страницу /feed через URL
+        driver.get(f"{MainPage.BASE_URL}feed")
+        assert feed_page.is_order_feed_page_loaded(), "Страница ленты заказов не загрузилась после оформления заказа."
+
+        # Ожидание обновления дневного счётчика
+        assert feed_page.wait_for_counters_update(
+            initial_total=None,
+            initial_today=initial_today,
+            timeout=20,
+        ), 'Счётчик "Выполнено за сегодня" не обновился после создания заказа.'
+
+        # Контрольное сравнение
+        new_today = feed_page.get_today_orders_count()
+        assert new_today > initial_today, (
+            f'Счётчик "Выполнено за сегодня" не увеличился. '
+            f"Было: {initial_today}, стало: {new_today}"
+        )
+
+    @allure.title('После оформления заказа его номер появляется в разделе "В работе"')
+    @allure.description(
+        "1. Авторизация пользователя\n"
+        "2. Создание заказа через UI\n"
+        "3. Переход в ленту заказов\n"
+        "4. Проверка, что номер заказа присутствует в блоке \"В работе\""
+    )
+    def test_order_number_appears_in_in_progress_block(self, driver, api_user):
+        # Авторизация
+        login_page = LoginPage(driver)
+        login_page.open_login()
+        login_page.set_email(api_user["email"])
+        login_page.set_password(api_user["password"])
+        login_page.submit_login()
+
+        main_page = MainPage(driver)
+        feed_page = OrderFeedPage(driver)
+
+        # Создание заказа через UI
+        order_number = main_page.create_order_ui()
+        assert order_number is not None, "Не удалось получить номер заказа."
+        assert order_number != "9999", "Получен временный номер заказа 9999."
+
+        normalized_number = feed_page.normalize_order_number(order_number)
+
+        # Переход на страницу /feed
+        driver.get(f"{MainPage.BASE_URL}feed")
+        assert feed_page.is_order_feed_page_loaded(), "Страница ленты заказов не загрузилась."
+
+        # Ожидание появления номера в блоке «В работе»
+        assert feed_page.wait_for_order_in_progress(
+            normalized_number,
+            timeout=30,
+        ), f"Заказ {normalized_number} не появился в блоке 'В работе'."
+
+        # Дополнительная проверка
+        in_progress_now = feed_page.get_orders_in_progress_normalized()
+        assert normalized_number in in_progress_now, (
+            f"Номер заказа {normalized_number} отсутствует в блоке 'В работе'. "
+            f"Текущий список: {in_progress_now}"
+        )

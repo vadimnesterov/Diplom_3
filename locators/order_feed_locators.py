@@ -2,25 +2,28 @@ from selenium.webdriver.common.by import By
 
 
 class OrderFeedLocators:
-    """Локаторы элементов на странице 'Лента заказов'."""
-
-    # Заголовок / текст "Лента заказов"
-    FEED_HEADER = (By.XPATH, "//h1[text()='Лента заказов']")
-
-    # Список карточек заказов
-    ORDERS_LIST = (
+    # Заголовок страницы "Лента заказов"
+    title_orders_list = (
         By.XPATH,
-        "//ul[contains(@class,'OrderFeed_list') or contains(@class,'OrderHistory_list')]/li",
+        "//h1[contains(text(), 'Лента заказов')]"
     )
 
-    # Блок "Выполнено за все время"
-    TOTAL_ORDERS_ALL_TIME = (
+    # Счётчик "Выполнено за всё время"
+    total_orders_counter = (
         By.XPATH,
-        "//p[text()='Выполнено за все время:']/following-sibling::p",
+        "//p[contains(text(), 'Выполнено за все') or contains(text(), 'Выполнено за всё')]/following-sibling::p"
     )
 
-    # Блок "Выполнено за сегодня"
-    TOTAL_ORDERS_TODAY = (
+    # Счётчик "Выполнено за сегодня"
+    dayly_orders_counter = (
         By.XPATH,
-        "//p[text()='Выполнено за сегодня:']/following-sibling::p",
+        "//p[contains(text(), 'Выполнено за сегодня')]/following-sibling::p"
+    )
+
+    # Элементы заказов в блоке "В работе"
+    number_order_in_job = (
+        By.XPATH,
+        "//ul[contains(@class,'OrderFeed_orderList') and contains(@class,'inWork')]//li"
+        " | //ul[contains(@class,'OrderFeed_ordersList') and contains(@class,'inWork')]//li"
+        " | //ul[contains(@class,'OrderFeed_list') and contains(@class,'inWork')]//li"
     )

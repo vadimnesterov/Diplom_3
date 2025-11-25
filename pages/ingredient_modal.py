@@ -1,4 +1,4 @@
-from locators.modal_locators import ModalLocators
+from locators.order_modal_locators import ModalLocators
 from .base_page import BasePage
 
 

@@ -5,6 +5,18 @@ from selenium.webdriver.firefox.options import Options as FirefoxOptions
 
 from data.urls import MAIN_PAGE
 from helpers.user_api_helper import UserAPIHelper
+from pages.login_page import LoginPage
+
+@pytest.fixture
+def login_user(driver, api_user):
+    """Создаёт пользователя через API и логинит его через UI."""
+    login = LoginPage(driver)
+    login.open_login()
+    login.set_email(api_user["email"])
+    login.set_password(api_user["password"])
+    login.submit_login()
+
+    return api_user
 
 
 @pytest.fixture(params=["chrome", "firefox"])
