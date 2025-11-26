@@ -5,7 +5,7 @@ from pages.main_page import MainPage
 
 class TestIngredientModal:
 
-    @allure.title("Модальное окно ингредиента закрывается по крестику")
+    @allure.title("Закрытие модального окна ингредиента по крестику")
     @allure.description(
         "1. Открыть главную страницу\n"
         "2. Кликнуть по ингредиенту\n"
