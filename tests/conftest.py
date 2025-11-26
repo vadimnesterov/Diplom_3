@@ -9,9 +9,9 @@ from selenium.webdriver.firefox.options import Options as FirefoxOptions
 from helpers.user_api_helper import UserAPIHelper
 
 
-# ===========================
-# ✅ Browser driver fixture
-# ===========================
+
+# Фикстура WebDriver с параметризацией по браузерам (Chrome, Firefox)
+
 
 @pytest.fixture(params=["chrome", "firefox"])
 def driver(request):
@@ -36,9 +36,9 @@ def driver(request):
     driver.quit()
 
 
-# ===========================
-# ✅ API user fixture (ТВОЯ, БЕЗ ИЗМЕНЕНИЙ)
-# ===========================
+
+# Фикстура для создания тестового пользователя через API
+
 
 @pytest.fixture
 def api_user():
