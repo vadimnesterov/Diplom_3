@@ -71,7 +71,7 @@ class OrderFeedPage(BasePage):
 
     @allure.step('Получить значение счётчика "Выполнено за сегодня"')
     def get_today_orders_count(self) -> int:
-        return self._parse_int_from(OrderFeedLocators.dayly_orders_counter)
+        return self._parse_int_from(OrderFeedLocators.daily_orders_counter)
 
     @staticmethod
     def normalize_order_number(order_number: str) -> str:
@@ -89,7 +89,7 @@ class OrderFeedPage(BasePage):
     def get_orders_in_progress_normalized(self, timeout: int = 15) -> list:
         """
         Возвращает список номеров заказов из блока «В работе»:
-        - берём второй список ul.OrderFeed_orderList__*;
+        - берём второй список ul. OrderFeed_orderList__*;
         - собираем все li;
         - нормализуем номера через normalize_order_number().
         """

@@ -15,7 +15,7 @@ class OrderFeedLocators:
     )
 
     # Счётчик "Выполнено за сегодня"
-    dayly_orders_counter = (
+    daily_orders_counter = (
         By.XPATH,
         "//p[contains(text(), 'Выполнено за сегодня')]/following-sibling::p"
     )
