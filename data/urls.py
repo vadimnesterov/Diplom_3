@@ -1,4 +1,4 @@
-# data/urls.py
+# data/urls.py v1.1
 
 class MainUrl:
     MAIN_URL = "https://stellarburgers.education-services.ru/"
@@ -26,10 +26,3 @@ class Endpoints:
     GET_ALL_ORDERS = "api/orders/all"
 
 
-# --- совместимость с прежними константами ---
-
-MAIN_PAGE = MainUrl.MAIN_URL
-LOGIN_PAGE = MAIN_PAGE + URLS.url_login
-REGISTER_PAGE = MAIN_PAGE + URLS.url_register
-PROFILE_PAGE = MAIN_PAGE + URLS.url_profile_area
-FEED_PAGE = MAIN_PAGE + URLS.url_feed

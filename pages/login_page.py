@@ -1,6 +1,6 @@
 # pages/login_page.py v1.2
 
-from data.urls import URLS, MAIN_PAGE
+from data.urls import MainUrl, URLS
 from .base_page import BasePage
 from locators.login_page_locators import LoginPageLocators
 from locators.constructor_page_locators import ConstructorPageLocators
@@ -11,7 +11,7 @@ class LoginPage(BasePage):
     """Страница логина."""
 
     def open_login(self):
-        self.open(MAIN_PAGE + URLS.url_login)
+        self.open(MainUrl.MAIN_URL + URLS.url_login)
 
     def set_email(self, email: str):
         self.type(LoginPageLocators.EMAIL_FIELD, email)
