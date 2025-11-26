@@ -1,3 +1,4 @@
+import pytest
 import allure
 
 from pages.main_page import MainPage
@@ -9,9 +10,9 @@ class TestIngredientModal:
     @allure.description(
         "1. Открыть главную страницу\n"
         "2. Кликнуть по ингредиенту\n"
-        "3. Убедиться, что модалка открылась\n"
-        "4. Закрыть модалку по крестику\n"
-        "5. Убедиться, что модалка закрыта"
+        "3. Убедиться, что модальное окно открылось\n"
+        "4. Закрыть модальное окно по крестику\n"
+        "5. Убедиться, что модальное окно закрыто"
     )
     def test_ingredient_modal_closes_by_cross(self, driver):
         main_page = MainPage(driver)
@@ -22,11 +23,11 @@ class TestIngredientModal:
         # Кликаем по ингредиенту
         main_page.click_ingredient()
 
-        # Проверяем, что модалка открылась
-        assert main_page.is_ingredient_modal_visible(), "Модалка ингредиента не открылась"
+        # Проверяем, что модальное окно открылась
+        assert main_page.is_ingredient_modal_visible(), "Модальное окно ингредиента не открылась"
 
-        # Закрываем модалку по крестику
+        # Закрываем модальное окно по крестику
         main_page.close_ingredient_modal()
 
         # Проверяем, что модалка закрылась
-        assert main_page.is_ingredient_modal_closed(), "Модалка ингредиента не закрылась по крестику"
+        assert main_page.is_ingredient_modal_closed(), "Модальное окно ингредиента не закрылась по крестику"

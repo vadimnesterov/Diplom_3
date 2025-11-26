@@ -90,7 +90,7 @@ class TestOrderFeed:
         main_page.click_constructor()
         order_number = main_page.create_order_ui()
         assert order_number is not None, "Не удалось получить номер заказа."
-        assert order_number != "9999", "Получен временный номер заказа 9999 вместо финального."
+        assert order_number != "9999", "Получен временный(ЗАГЛУШКА) номер заказа 9999 вместо финального."
 
         # Снова переходим в ленту заказов через шапку
         main_page.click_order_feed()
