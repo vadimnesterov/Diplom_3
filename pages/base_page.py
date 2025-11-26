@@ -1,4 +1,4 @@
-# pages/base_page.py
+# pages/base_page.py  v1.1
 
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -7,53 +7,53 @@ import allure
 
 
 class BasePage:
-    """Базовый класс для всех PageObject."""
+    """Базовый Page Object. Содержит универсальные методы ожиданий, кликов и JS-утилит."""
 
     def __init__(self, driver, timeout: int = 10):
         self.driver = driver
         self.timeout = timeout
 
-    # ===== базовые утилиты ожиданий =====
+    # ===== БАЗОВЫЕ ОЖИДАНИЯ =====
 
     def _get_wait(self, timeout: int | None = None) -> WebDriverWait:
-        """Вернуть WebDriverWait с нужным таймаутом."""
+        """Получить WebDriverWait с заданным или дефолтным таймаутом."""
         return WebDriverWait(self.driver, timeout or self.timeout)
 
-    @allure.step("Ждать кликабельности элемента")
+    @allure.step("Ожидание кликабельности элемента")
     def wait_element_clickable(self, locator, timeout: int = 10):
         return WebDriverWait(self.driver, timeout).until(
             EC.element_to_be_clickable(locator)
         )
 
-    @allure.step("Ждать видимости элемента")
+    @allure.step("Ожидание видимости элемента")
     def wait_element_visible(self, locator, timeout: int = 10):
         return WebDriverWait(self.driver, timeout).until(
             EC.visibility_of_element_located(locator)
         )
 
-    # ===== поиск элементов =====
+    # ===== ПОИСК ЭЛЕМЕНТОВ =====
 
-    @allure.step("Найти элемент без ожидания")
+    @allure.step("Поиск элемента без ожидания")
     def find_element(self, locator):
         return self.driver.find_element(*locator)
 
-    @allure.step("Найти несколько элементов без ожидания")
+    @allure.step("Поиск списка элементов без ожидания")
     def find_elements(self, locator):
         return self.driver.find_elements(*locator)
 
-    @allure.step("Найти элемент с ожиданием")
+    @allure.step("Поиск элемента с ожиданием видимости")
     def find_element_with_wait(self, locator, timeout: int = 10):
         return self.wait_element_visible(locator, timeout)
 
-    # ===== клики и ввод =====
+    # ===== КЛИКИ И ВВОД =====
 
-    @allure.step("Кликнуть по кнопке")
+    @allure.step("Клик по элементу")
     def click_button(self, locator, timeout: int = 10):
         """
-        Стандартный клик:
-        1) ждём кликабельности
-        2) кликаем
-        3) если не получилось — дожидаемся видимости и жмём JS-кликом
+        Универсальный клик:
+        1) ожидание кликабельности
+        2) обычный клик
+        3) при ошибке — ожидание видимости + JS-клик
         """
         try:
             element = self.wait_element_clickable(locator, timeout)
@@ -63,25 +63,19 @@ class BasePage:
             self.driver.execute_script("arguments[0].click();", element)
 
     def click(self, locator, timeout: int | None = None):
-        """Совместимость со старым интерфейсом: click()."""
+        """Обёртка совместимости для старых вызовов click()."""
         return self.click_button(locator, timeout or self.timeout)
 
-    @allure.step("Ввести текст в поле")
+    @allure.step("Ввод текста в поле")
     def type(self, locator, text: str, timeout: int | None = None):
-        """
-        Ввести текст в поле:
-        1) дождаться видимости
-        2) очистить
-        3) ввести текст
-        """
         element = self.wait_element_visible(locator, timeout or self.timeout)
         element.clear()
         element.send_keys(text)
         return element
 
-    # ===== проверки видимости =====
+    # ===== ПРОВЕРКИ ВИДИМОСТИ =====
 
-    @allure.step("Проверить видимость элемента")
+    @allure.step("Проверка видимости элемента")
     def is_element_visible(self, locator, timeout: int = 5) -> bool:
         try:
             WebDriverWait(self.driver, timeout).until(
@@ -91,7 +85,7 @@ class BasePage:
         except TimeoutException:
             return False
 
-    @allure.step("Проверить, что элемент невидим")
+    @allure.step("Проверка невидимости элемента")
     def is_element_not_visible(self, locator, timeout: int = 5) -> bool:
         try:
             WebDriverWait(self.driver, timeout).until(
@@ -101,14 +95,13 @@ class BasePage:
         except TimeoutException:
             return False
 
-    # ===== модальные окна =====
+    # ===== МОДАЛЬНЫЕ ОКНА =====
 
-    @allure.step("Принудительно закрыть все модальные окна")
+    @allure.step("Принудительное закрытие всех модальных окон")
     def force_close_modals(self):
         try:
             self.driver.execute_script(
                 """
-                // Нажать ESC
                 var escEvent = new KeyboardEvent('keydown', {
                     key: 'Escape',
                     code: 'Escape',
@@ -117,11 +110,12 @@ class BasePage:
                 });
                 document.dispatchEvent(escEvent);
 
-                // Клик по всем overlay/modal
-                var overlays = document.querySelectorAll('[class*="overlay"], [class*="modal"]');
-                overlays.forEach(function(overlay) {
-                    if (overlay.style.display !== 'none') {
-                        overlay.click();
+                var overlays = document.querySelectorAll(
+                    '[class*="overlay"], [class*="modal"]'
+                );
+                overlays.forEach(function(el) {
+                    if (el.style.display !== 'none') {
+                        el.click();
                     }
                 });
                 """
@@ -129,9 +123,9 @@ class BasePage:
         except Exception:
             pass
 
-    # ===== drag & drop =====
+    # ===== DRAG & DROP =====
 
-    @allure.step("Перетащить элемент (JS drag&drop)")
+    @allure.step("Перетаскивание элемента (через JS drag&drop)")
     def drag_and_drop(self, source_locator, target_locator):
         source = self.find_element_with_wait(source_locator)
         target = self.find_element_with_wait(target_locator)
@@ -157,11 +151,7 @@ class BasePage:
                 if (transferData !== undefined) {
                     event.dataTransfer = transferData;
                 }
-                if (element.dispatchEvent) {
-                    element.dispatchEvent(event);
-                } else if (element.fireEvent) {
-                    element.fireEvent("on" + event.type, event);
-                }
+                element.dispatchEvent(event);
             }
 
             var source = arguments[0];
@@ -186,30 +176,28 @@ class BasePage:
             target,
         )
 
-    # ===== загрузка страницы / JS =====
+    # ===== ЗАГРУЗКА СТРАНИЦ И JS =====
 
-    @allure.step("Открыть URL")
+    @allure.step("Открытие URL")
     def open(self, url: str):
         self.driver.get(url)
 
-    @allure.step("Ждать загрузки страницы")
+    @allure.step("Ожидание полной загрузки страницы")
     def wait_for_page_load(self, timeout: int = 10):
         WebDriverWait(self.driver, timeout).until(
             lambda driver: driver.execute_script("return document.readyState") == "complete"
         )
 
-    @allure.step("Выполнить JavaScript")
+    @allure.step("Выполнение JavaScript-кода")
     def execute_script(self, script: str, *args):
         return self.driver.execute_script(script, *args)
 
-    # ===== универсальные ожидания (обёртки под старые вызовы) =====
+    # ===== УНИВЕРСАЛЬНЫЕ ОБЁРТКИ =====
 
     def wait_for_visible(self, locator, timeout: int | None = None):
-        """Совместимость: старое имя метода, используется в страницах (OrderFeedPage и др.)."""
         return self.wait_element_visible(locator, timeout or self.timeout)
 
     def wait_for_clickable(self, locator, timeout: int | None = None):
-        """Совместимость: старое имя метода."""
         return self.wait_element_clickable(locator, timeout or self.timeout)
 
     def wait_for_text(self, locator, text: str, timeout: int | None = None) -> bool:
@@ -221,11 +209,10 @@ class BasePage:
         return wait.until(EC.url_contains(substring))
 
     def wait_for_condition(self, condition_fn, timeout: int | None = None):
-        """Универсальное ожидание произвольного предиката."""
         wait = self._get_wait(timeout)
         return wait.until(condition_fn)
 
-    # ===== утилиты =====
+    # ===== ВСПОМОГАТЕЛЬНЫЕ УТИЛИТЫ =====
 
     def scroll_into_view(self, locator, timeout: int | None = None):
         element = self.wait_for_visible(locator, timeout)
