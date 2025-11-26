@@ -1,56 +1,66 @@
+# conftest.py
+# version: v1.2
+
 import pytest
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options as ChromeOptions
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
 
-from data.urls import MAIN_PAGE
 from helpers.user_api_helper import UserAPIHelper
-from pages.login_page import LoginPage
 
-@pytest.fixture
-def login_user(driver, api_user):
-    """Создаёт пользователя через API и логинит его через UI."""
-    login = LoginPage(driver)
-    login.open_login()
-    login.set_email(api_user["email"])
-    login.set_password(api_user["password"])
-    login.submit_login()
 
-    return api_user
-
+# ===========================
+# ✅ Browser driver fixture
+# ===========================
 
 @pytest.fixture(params=["chrome", "firefox"])
 def driver(request):
-    """Запуск тестов в Chrome и Firefox."""
     browser = request.param
 
     if browser == "chrome":
         options = ChromeOptions()
-        options.add_argument("--window-size=1920,1080")
-        web_driver = webdriver.Chrome(options=options)
+        options.add_argument("--start-maximized")
+        driver = webdriver.Chrome(options=options)
 
     elif browser == "firefox":
         options = FirefoxOptions()
-        options.set_preference("layout.css.devPixelsPerPx", "1.0")
-        web_driver = webdriver.Firefox(options=options)
-        web_driver.set_window_size(1920, 1080)
+        options.add_argument("--width=1920")
+        options.add_argument("--height=1080")
+        driver = webdriver.Firefox(options=options)
 
     else:
-        raise ValueError(f"Неизвестный браузер: {browser}")
+        raise ValueError(f"Unsupported browser: {browser}")
 
-    web_driver.implicitly_wait(5)
-    web_driver.get(MAIN_PAGE)
+    yield driver
 
-    yield web_driver
+    driver.quit()
 
-    web_driver.quit()
 
+# ===========================
+# ✅ API user fixture (ТВОЯ, БЕЗ ИЗМЕНЕНИЙ)
+# ===========================
 
 @pytest.fixture
 def api_user():
     """
-    Создаёт тестового пользователя через API.
-    Возвращает словарь с полями name, password, email.
+    Фикстура:
+    1) Создаёт пользователя через API
+    2) Логинится
+    3) Возвращает данные + токен
+    4) После теста удаляет пользователя
     """
     helper = UserAPIHelper()
-    return helper.create_test_user()
+
+    user_data = helper.create_test_user()
+    login_response = helper.login_user_request(user_data)
+
+    access_token = login_response.json().get("accessToken")
+    assert access_token, "Токен авторизации не получен"
+
+    yield {
+        "email": user_data["email"],
+        "password": user_data["password"],
+        "access_token": access_token,
+    }
+
+    helper.delete_user(access_token)

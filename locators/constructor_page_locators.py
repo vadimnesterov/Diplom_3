@@ -7,5 +7,5 @@ class ConstructorPageLocators:
     TAB_SAUCES = (By.XPATH, "//span[text()='Соусы']/parent::div[contains(@class,'tab_tab__')]")
     TAB_FILLINGS = (By.XPATH, "//span[text()='Начинки']/parent::div[contains(@class,'tab_tab__')]")
 
-    # Order button
+    # Кнопка Оформить заказ
     ORDER_BUTTON = (By.XPATH, "//button[contains(@class,'button_button') and .='Оформить заказ']")
