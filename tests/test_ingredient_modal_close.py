@@ -29,5 +29,5 @@ class TestIngredientModal:
         # Закрываем модальное окно по крестику
         main_page.close_ingredient_modal()
 
-        # Проверяем, что модалка закрылась
+        # Проверяем, что модальное окно закрылось
         assert main_page.is_ingredient_modal_closed(), "Модальное окно ингредиента не закрылась по крестику"

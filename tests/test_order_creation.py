@@ -23,7 +23,7 @@ class TestOrderFeed:
         login_page.open_login()
         login_page.set_email(api_user["email"])
         login_page.set_password(api_user["password"])
-        login_page.submit_login()
+        assert login_page.submit_login(), "Авторизация не выполнена"
 
         main_page = MainPage(driver)
         feed_page = OrderFeedPage(driver)
@@ -74,7 +74,7 @@ class TestOrderFeed:
         login_page.open_login()
         login_page.set_email(api_user["email"])
         login_page.set_password(api_user["password"])
-        login_page.submit_login()
+        assert login_page.submit_login(), "Авторизация не выполнена"
 
         main_page = MainPage(driver)
         feed_page = OrderFeedPage(driver)
@@ -123,7 +123,7 @@ class TestOrderFeed:
         login_page.open_login()
         login_page.set_email(api_user["email"])
         login_page.set_password(api_user["password"])
-        login_page.submit_login()
+        assert login_page.submit_login(), "Авторизация не выполнена"
 
         main_page = MainPage(driver)
         feed_page = OrderFeedPage(driver)
