@@ -1,4 +1,4 @@
-# tests/test_main_page_functionality.py
+# tests/test_main_page_functionality.py v1.1
 
 import allure
 
@@ -27,11 +27,13 @@ class TestMainPageFunctionality:
 
         # Уходим в ленту заказов, чтобы точно не быть на /
         main.click_order_feed()
-        assert URLS.url_feed in driver.current_url
+        main.wait_for_url_contains(URLS.url_feed)
+        assert main.is_url_contains(URLS.url_feed)
 
         # Возвращаемся кликом по «Конструктор»
         main.click_constructor()
-        assert URLS.url_feed not in driver.current_url
+        main.wait_for_url_contains("/")  # ждём возврат на главную
+        assert not main.is_url_contains(URLS.url_feed)
 
     @allure.title('Переход по клику на раздел «Лента заказов»')
     @allure.description('''
