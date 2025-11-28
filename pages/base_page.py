@@ -1,4 +1,4 @@
-# pages/base_page.py  v1.1
+# pages/base_page.py  v1.2
 
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -62,6 +62,7 @@ class BasePage:
             element = self.wait_element_visible(locator, timeout)
             self.driver.execute_script("arguments[0].click();", element)
 
+    @allure.step("Клик по элементу (совместимый метод)")
     def click(self, locator, timeout: int | None = None):
         """Обёртка совместимости для старых вызовов click()."""
         return self.click_button(locator, timeout or self.timeout)
@@ -182,6 +183,16 @@ class BasePage:
     def open(self, url: str):
         self.driver.get(url)
 
+    # URL
+
+    @allure.step("Получить текущий URL страницы")
+    def get_current_url(self) -> str:
+        return self.driver.current_url
+
+    @allure.step("Проверить, что текущий URL содержит: {substring}")
+    def is_url_contains(self, substring: str) -> bool:
+        return substring in self.driver.current_url
+
     @allure.step("Ожидание полной загрузки страницы")
     def wait_for_page_load(self, timeout: int = 10):
         WebDriverWait(self.driver, timeout).until(
@@ -214,6 +225,7 @@ class BasePage:
 
     # ===== ВСПОМОГАТЕЛЬНЫЕ УТИЛИТЫ =====
 
+    @allure.step("Прокрутить страницу до элемента")
     def scroll_into_view(self, locator, timeout: int | None = None):
         element = self.wait_for_visible(locator, timeout)
         self.driver.execute_script(
@@ -222,6 +234,7 @@ class BasePage:
         )
         return element
 
+    @allure.step("Получить текст элемента")
     def get_text(self, locator, timeout: int | None = None) -> str:
         element = self.wait_for_visible(locator, timeout)
         return element.text
