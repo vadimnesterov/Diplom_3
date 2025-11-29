@@ -1,24 +1,25 @@
-# data/user_data.py v1.1
+# data/user_data.py v1.2
+
+from data.urls import Endpoints
+
 
 class UserAPIData:
     """URL и методы для работы с пользователем через API."""
 
-    BASE_API_URL = "https://stellarburgers.education-services.ru/api"
-
-    # ✅ Создание пользователя
+    # Создание пользователя
     USER_CREATE_URL = (
-        f"{BASE_API_URL}/auth/register",
+        Endpoints.CREATE_USER,
         "post",
     )
 
-    # ✅ Авторизация пользователя
+    # Авторизация пользователя
     USER_LOGIN_URL = (
-        f"{BASE_API_URL}/auth/login",
+        Endpoints.LOGIN,
         "post",
     )
 
-    # ✅ Удаление пользователя
+    # Удаление пользователя
     USER_DELETE_URL = (
-        f"{BASE_API_URL}/auth/user",
+        Endpoints.DELETE_USER,
         "delete",
     )
