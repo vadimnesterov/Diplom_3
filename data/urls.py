@@ -1,4 +1,4 @@
-# data/urls.py v1.1
+# data/urls.py v1.2
 
 class MainUrl:
     MAIN_URL = "https://stellarburgers.education-services.ru/"
@@ -16,13 +16,11 @@ class URLS:
 
 
 class Endpoints:
-    """Ручки для работы с API"""
-    CREATE_USER = "api/auth/register"
-    LOGIN = "api/auth/login"
-    DELETE_USER = "api/auth/user"
-    CREATE_ORDER = "api/orders"
-    GET_ORDERS = "api/orders"
-    GET_USER_ORDERS = "api/orders"
-    GET_ALL_ORDERS = "api/orders/all"
-
-
+    """Ручки для работы с API (через базовый MAIN_URL)"""
+    CREATE_USER = f"{MainUrl.MAIN_URL}api/auth/register"
+    LOGIN = f"{MainUrl.MAIN_URL}api/auth/login"
+    DELETE_USER = f"{MainUrl.MAIN_URL}api/auth/user"
+    CREATE_ORDER = f"{MainUrl.MAIN_URL}api/orders"
+    GET_ORDERS = f"{MainUrl.MAIN_URL}api/orders"
+    GET_USER_ORDERS = f"{MainUrl.MAIN_URL}api/orders"
+    GET_ALL_ORDERS = f"{MainUrl.MAIN_URL}api/orders/all"
