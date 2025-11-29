@@ -1,4 +1,9 @@
-allure-python-commons
-requests>=2.32
+# requirements.txt v1.1
+
 pytest>=8.0
 allure-pytest>=2.13.5
+allure-python-commons
+requests>=2.32
+
+selenium>=4.20.0
+pytest-cov
