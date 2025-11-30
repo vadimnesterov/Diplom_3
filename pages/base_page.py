@@ -1,102 +1,134 @@
-# pages/base_page.py  v1.2
+# pages/base_page.py
+# version: v1.5
 
+import allure
+from selenium.webdriver import ActionChains
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
-import allure
 
 
 class BasePage:
-    """Базовый Page Object. Содержит универсальные методы ожиданий, кликов и JS-утилит."""
-
     def __init__(self, driver, timeout: int = 10):
         self.driver = driver
         self.timeout = timeout
 
-    # ===== БАЗОВЫЕ ОЖИДАНИЯ =====
+    # ================= WAIT CORE =================
 
     def _get_wait(self, timeout: int | None = None) -> WebDriverWait:
-        """Получить WebDriverWait с заданным или дефолтным таймаутом."""
         return WebDriverWait(self.driver, timeout or self.timeout)
 
-    @allure.step("Ожидание кликабельности элемента")
-    def wait_element_clickable(self, locator, timeout: int = 10):
-        return WebDriverWait(self.driver, timeout).until(
-            EC.element_to_be_clickable(locator)
+    @allure.step("Ожидание загрузки страницы")
+    def wait_for_page_load(self, timeout: int | None = None):
+        self._get_wait(timeout).until(
+            lambda d: d.execute_script("return document.readyState") == "complete"
         )
 
-    @allure.step("Ожидание видимости элемента")
-    def wait_element_visible(self, locator, timeout: int = 10):
-        return WebDriverWait(self.driver, timeout).until(
+    @allure.step("Ожидание отображения элемента")
+    def wait_for_visible(self, locator, timeout: int | None = None):
+        return self._get_wait(timeout).until(
             EC.visibility_of_element_located(locator)
         )
 
-    # ===== ПОИСК ЭЛЕМЕНТОВ =====
+    @allure.step("Ожидание кликабельности элемента")
+    def wait_for_clickable(self, locator, timeout: int | None = None):
+        return self._get_wait(timeout).until(
+            EC.element_to_be_clickable(locator)
+        )
 
-    @allure.step("Поиск элемента без ожидания")
-    def find_element(self, locator):
-        return self.driver.find_element(*locator)
+    @allure.step("Ожидание появления текста")
+    def wait_for_text(self, locator, text: str, timeout: int | None = None):
+        return self._get_wait(timeout).until(
+            EC.text_to_be_present_in_element(locator, text)
+        )
 
-    @allure.step("Поиск списка элементов без ожидания")
-    def find_elements(self, locator):
-        return self.driver.find_elements(*locator)
+    @allure.step("Ожидание части URL")
+    def wait_for_url_contains(self, substring: str, timeout: int | None = None):
+        return self._get_wait(timeout).until(
+            EC.url_contains(substring)
+        )
 
-    @allure.step("Поиск элемента с ожиданием видимости")
-    def find_element_with_wait(self, locator, timeout: int = 10):
-        return self.wait_element_visible(locator, timeout)
+    @allure.step("Ожидание произвольного условия")
+    def wait_for_condition(self, condition, timeout: int | None = None):
+        return self._get_wait(timeout).until(condition)
 
-    # ===== КЛИКИ И ВВОД =====
-
-    @allure.step("Клик по элементу")
-    def click_button(self, locator, timeout: int = 10):
-        """
-        Универсальный клик:
-        1) ожидание кликабельности
-        2) обычный клик
-        3) при ошибке — ожидание видимости + JS-клик
-        """
+    @allure.step("Ожидание исчезновения элемента")
+    def wait_for_invisibility(self, locator, timeout: int | None = None) -> bool:
         try:
-            element = self.wait_element_clickable(locator, timeout)
-            element.click()
-        except Exception:
-            element = self.wait_element_visible(locator, timeout)
-            self.driver.execute_script("arguments[0].click();", element)
-
-    @allure.step("Клик по элементу (совместимый метод)")
-    def click(self, locator, timeout: int | None = None):
-        """Обёртка совместимости для старых вызовов click()."""
-        return self.click_button(locator, timeout or self.timeout)
-
-    @allure.step("Ввод текста в поле")
-    def type(self, locator, text: str, timeout: int | None = None):
-        element = self.wait_element_visible(locator, timeout or self.timeout)
-        element.clear()
-        element.send_keys(text)
-        return element
-
-    # ===== ПРОВЕРКИ ВИДИМОСТИ =====
-
-    @allure.step("Проверка видимости элемента")
-    def is_element_visible(self, locator, timeout: int = 5) -> bool:
-        try:
-            WebDriverWait(self.driver, timeout).until(
-                EC.visibility_of_element_located(locator)
-            )
-            return True
-        except TimeoutException:
-            return False
-
-    @allure.step("Проверка невидимости элемента")
-    def is_element_not_visible(self, locator, timeout: int = 5) -> bool:
-        try:
-            WebDriverWait(self.driver, timeout).until(
+            result = self._get_wait(timeout).until(
                 EC.invisibility_of_element_located(locator)
             )
+            return bool(result)
+        except TimeoutException:
+            return False
+
+    # ================= CHECKERS =================
+
+    @allure.step("Проверка, что элемент видим")
+    def is_element_visible(self, locator, timeout: int | None = None) -> bool:
+        try:
+            self.wait_for_visible(locator, timeout)
             return True
         except TimeoutException:
             return False
 
-    # ===== МОДАЛЬНЫЕ ОКНА =====
+    @allure.step("Проверка, что элемент НЕ видим")
+    def is_element_not_visible(self, locator, timeout: int | None = None) -> bool:
+        return self.wait_for_invisibility(locator, timeout)
+
+    # ================= URL (из v1.2) =================
+
+    @allure.step("Получить текущий URL")
+    def get_current_url(self) -> str:
+        return self.driver.current_url
+
+    @allure.step("Проверить, что URL содержит подстроку")
+    def is_url_contains(self, substring: str) -> bool:
+        return substring in self.driver.current_url
+
+    # ================= ELEMENT ACCESS =================
+
+    @allure.step("Поиск элемента")
+    def find_element(self, locator, timeout: int | None = None):
+        return self.wait_for_visible(locator, timeout)
+
+    @allure.step("Ожидание элемента (алиас совместимости)")
+    def wait_element_visible(self, locator, timeout: int | None = None):
+        return self.wait_for_visible(locator, timeout)
+
+    # ================= ACTIONS =================
+
+    @allure.step("Клик по элементу (с JS fallback)")
+    def click(self, locator, timeout: int | None = None):
+        try:
+            element = self.wait_for_clickable(locator, timeout)
+            element.click()
+        except Exception:
+            element = self.wait_for_visible(locator, timeout)
+            self.driver.execute_script("arguments[0].click();", element)
+
+    @allure.step("Клик по кнопке")
+    def click_button(self, locator, timeout: int | None = None):
+        self.click(locator, timeout)
+
+    @allure.step("Ввод текста")
+    def fill(self, locator, value: str, timeout: int | None = None):
+        element = self.wait_for_visible(locator, timeout)
+        element.clear()
+        element.send_keys(value)
+
+    @allure.step("Получение текста элемента")
+    def get_text(self, locator, timeout: int | None = None) -> str:
+        element = self.wait_for_visible(locator, timeout)
+        return element.text
+
+    # ================= JS =================
+
+    @allure.step("Выполнение JavaScript")
+    def execute_script(self, script: str, *args):
+        return self.driver.execute_script(script, *args)
+
+    # ================= MODALS (SAFE v1.2) =================
 
     @allure.step("Принудительное закрытие всех модальных окон")
     def force_close_modals(self):
@@ -124,12 +156,12 @@ class BasePage:
         except Exception:
             pass
 
-    # ===== DRAG & DROP =====
+    # ================= DRAG & DROP (SAFE JS) =================
 
-    @allure.step("Перетаскивание элемента (через JS drag&drop)")
+    @allure.step("Drag and Drop элемента (через JS, стабильно для Firefox)")
     def drag_and_drop(self, source_locator, target_locator):
-        source = self.find_element_with_wait(source_locator)
-        target = self.find_element_with_wait(target_locator)
+        source = self.wait_for_visible(source_locator)
+        target = self.wait_for_visible(target_locator)
 
         self.driver.execute_script(
             """
@@ -176,65 +208,3 @@ class BasePage:
             source,
             target,
         )
-
-    # ===== ЗАГРУЗКА СТРАНИЦ И JS =====
-
-    @allure.step("Открытие URL")
-    def open(self, url: str):
-        self.driver.get(url)
-
-    # URL
-
-    @allure.step("Получить текущий URL страницы")
-    def get_current_url(self) -> str:
-        return self.driver.current_url
-
-    @allure.step("Проверить, что текущий URL содержит: {substring}")
-    def is_url_contains(self, substring: str) -> bool:
-        return substring in self.driver.current_url
-
-    @allure.step("Ожидание полной загрузки страницы")
-    def wait_for_page_load(self, timeout: int = 10):
-        WebDriverWait(self.driver, timeout).until(
-            lambda driver: driver.execute_script("return document.readyState") == "complete"
-        )
-
-    @allure.step("Выполнение JavaScript-кода")
-    def execute_script(self, script: str, *args):
-        return self.driver.execute_script(script, *args)
-
-    # ===== УНИВЕРСАЛЬНЫЕ ОБЁРТКИ =====
-
-    def wait_for_visible(self, locator, timeout: int | None = None):
-        return self.wait_element_visible(locator, timeout or self.timeout)
-
-    def wait_for_clickable(self, locator, timeout: int | None = None):
-        return self.wait_element_clickable(locator, timeout or self.timeout)
-
-    def wait_for_text(self, locator, text: str, timeout: int | None = None) -> bool:
-        wait = self._get_wait(timeout)
-        return wait.until(EC.text_to_be_present_in_element(locator, text))
-
-    def wait_for_url_contains(self, substring: str, timeout: int | None = None) -> bool:
-        wait = self._get_wait(timeout)
-        return wait.until(EC.url_contains(substring))
-
-    def wait_for_condition(self, condition_fn, timeout: int | None = None):
-        wait = self._get_wait(timeout)
-        return wait.until(condition_fn)
-
-    # ===== ВСПОМОГАТЕЛЬНЫЕ УТИЛИТЫ =====
-
-    @allure.step("Прокрутить страницу до элемента")
-    def scroll_into_view(self, locator, timeout: int | None = None):
-        element = self.wait_for_visible(locator, timeout)
-        self.driver.execute_script(
-            "arguments[0].scrollIntoView({block: 'center'});",
-            element,
-        )
-        return element
-
-    @allure.step("Получить текст элемента")
-    def get_text(self, locator, timeout: int | None = None) -> str:
-        element = self.wait_for_visible(locator, timeout)
-        return element.text

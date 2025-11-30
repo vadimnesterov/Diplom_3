@@ -1,7 +1,5 @@
-# pages/main_page.py v1.3
+# pages/main_page.py v1.4
 
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.wait import WebDriverWait
 import allure
 
 from pages.base_page import BasePage
@@ -121,10 +119,12 @@ class MainPage(BasePage):
     @allure.step("Получить финальный номер заказа из модального окна")
     def get_final_order_number(self, timeout: int = 15):
         try:
-            # Ждём, пока исчезнет временный номер 9999
-            WebDriverWait(self.driver, timeout).until(
-                EC.invisibility_of_element_located(MainPageLocators.order_number_loading)
+            # Ждём, пока исчезнет временный номер "9999" через BasePage
+            self.wait_for_invisibility(
+                MainPageLocators.order_number_loading,
+                timeout=timeout,
             )
+
             # Затем ждём появление финального номера
             order_number_element = self.wait_element_visible(
                 MainPageLocators.order_number_final,
