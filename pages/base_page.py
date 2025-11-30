@@ -1,5 +1,5 @@
 # pages/base_page.py
-# version: v1.7
+# version: v1.8
 
 import allure
 from selenium.webdriver.support.ui import WebDriverWait
@@ -120,10 +120,6 @@ class BasePage:
         element.clear()
         element.send_keys(value)
         return element
-
-    @allure.step("Ввод текста (backward compatibility для старых PageObject)")
-    def type(self, locator, value: str, timeout: int | None = None):
-        return self.fill(locator, value, timeout)
 
     @allure.step("Получение текста элемента")
     def get_text(self, locator, timeout: int | None = None) -> str:

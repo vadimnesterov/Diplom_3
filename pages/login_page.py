@@ -1,4 +1,5 @@
-# pages/login_page.py v1.4
+# pages/login_page.py
+# version: v1.5
 
 import allure
 
@@ -17,11 +18,11 @@ class LoginPage(BasePage):
 
     @allure.step("Ввести email")
     def set_email(self, email: str):
-        self.type(LoginPageLocators.EMAIL_FIELD, email)
+        self.fill(LoginPageLocators.EMAIL_FIELD, email)
 
     @allure.step("Ввести пароль")
     def set_password(self, password: str):
-        self.type(LoginPageLocators.PASSWORD_FIELD, password)
+        self.fill(LoginPageLocators.PASSWORD_FIELD, password)
 
     @allure.step("Нажать кнопку 'Войти' и дождаться успешной авторизации")
     def submit_login(self) -> bool:
@@ -31,7 +32,6 @@ class LoginPage(BasePage):
         """
         self.click(LoginPageLocators.LOGIN_BUTTON)
 
-        # ЯВНО ждём появления кнопки "Оформить заказ"
         return self.is_element_visible(
             ConstructorPageLocators.ORDER_BUTTON,
             timeout=10
