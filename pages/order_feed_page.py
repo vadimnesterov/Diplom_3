@@ -1,5 +1,5 @@
 # pages/order_feed_page.py
-# version: v1.6
+# version: v1.7
 
 import allure
 
@@ -12,11 +12,6 @@ class OrderFeedPage(BasePage):
 
     @allure.step("Проверить, что открыта страница ленты заказов")
     def is_order_feed_page_loaded(self, timeout: int = 10) -> bool:
-        """
-        Мягкая проверка:
-        - ждём URL /feed через BasePage;
-        - если таймаут — проверяем через JS.
-        """
         try:
             self.wait_for_url_contains("/feed", timeout=timeout)
             return True
@@ -25,18 +20,11 @@ class OrderFeedPage(BasePage):
             return "/feed" in current_url
 
     def _parse_int_from(self, locator, timeout: int = 15) -> int:
-        """
-        Универсальный парсер числа:
-        1) через wait_for_visible;
-        2) fallback через execute_script;
-        3) фильтрация цифр.
-        """
         try:
             element = self.wait_for_visible(locator, timeout=timeout)
             text = element.text
         except Exception:
             try:
-                # Работаем через XPath (а не querySelector)
                 script = """
                     try {
                         return document.evaluate(
@@ -70,10 +58,6 @@ class OrderFeedPage(BasePage):
 
     @allure.step('Получить список номеров заказов в блоке "В работе" (нормализованный)')
     def get_orders_in_progress_normalized(self, timeout: int = 15) -> list:
-        """
-        Берём элементы через локатор из locators.
-        Fallback — через execute_script (XPath).
-        """
         try:
             self.wait_for_visible(
                 OrderFeedLocators.orders_in_progress_items,
@@ -149,7 +133,12 @@ class OrderFeedPage(BasePage):
         timeout: int = 30,
     ) -> bool:
 
+        last_total = None
+        last_today = None
+
         def condition(_):
+            nonlocal last_total, last_today
+
             current_total = (
                 self.get_total_orders_count() if initial_total is not None else None
             )
@@ -162,9 +151,11 @@ class OrderFeedPage(BasePage):
 
             if initial_total is not None and current_total is not None:
                 ok_total = current_total > initial_total
+                last_total = current_total
 
             if initial_today is not None and current_today is not None:
                 ok_today = current_today > initial_today
+                last_today = current_today
 
             return ok_total and ok_today
 

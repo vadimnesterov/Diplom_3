@@ -1,10 +1,11 @@
-# tests/test_order_creation.py v1.1
+# tests/test_order_creation.py v1.2
 
 import allure
 
 from pages.login_page import LoginPage
 from pages.main_page import MainPage
 from pages.order_feed_page import OrderFeedPage
+from helpers.order_helper import normalize_order_number
 
 
 class TestOrderFeed:
@@ -136,7 +137,7 @@ class TestOrderFeed:
         assert order_number is not None, "Не удалось получить номер заказа."
         assert order_number != "9999", "Получен временный номер заказа 9999 вместо финального."
 
-        normalized_number = feed_page.normalize_order_number(order_number)
+        normalized_number = normalize_order_number(order_number)
 
         # Переход в ленту заказов через шапку
         main_page.click_order_feed()

@@ -1,8 +1,7 @@
 # pages/base_page.py
-# version: v1.5
+# version: v1.7
 
 import allure
-from selenium.webdriver import ActionChains
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
@@ -12,6 +11,20 @@ class BasePage:
     def __init__(self, driver, timeout: int = 10):
         self.driver = driver
         self.timeout = timeout
+
+    # ================= URL =================
+
+    @allure.step("Открыть URL")
+    def open(self, url: str):
+        self.driver.get(url)
+
+    @allure.step("Получить текущий URL")
+    def get_current_url(self) -> str:
+        return self.driver.current_url
+
+    @allure.step("Проверить, что URL содержит подстроку")
+    def is_url_contains(self, substring: str) -> bool:
+        return substring in self.driver.current_url
 
     # ================= WAIT CORE =================
 
@@ -76,16 +89,6 @@ class BasePage:
     def is_element_not_visible(self, locator, timeout: int | None = None) -> bool:
         return self.wait_for_invisibility(locator, timeout)
 
-    # ================= URL (из v1.2) =================
-
-    @allure.step("Получить текущий URL")
-    def get_current_url(self) -> str:
-        return self.driver.current_url
-
-    @allure.step("Проверить, что URL содержит подстроку")
-    def is_url_contains(self, substring: str) -> bool:
-        return substring in self.driver.current_url
-
     # ================= ELEMENT ACCESS =================
 
     @allure.step("Поиск элемента")
@@ -116,6 +119,11 @@ class BasePage:
         element = self.wait_for_visible(locator, timeout)
         element.clear()
         element.send_keys(value)
+        return element
+
+    @allure.step("Ввод текста (backward compatibility для старых PageObject)")
+    def type(self, locator, value: str, timeout: int | None = None):
+        return self.fill(locator, value, timeout)
 
     @allure.step("Получение текста элемента")
     def get_text(self, locator, timeout: int | None = None) -> str:
@@ -128,7 +136,7 @@ class BasePage:
     def execute_script(self, script: str, *args):
         return self.driver.execute_script(script, *args)
 
-    # ================= MODALS (SAFE v1.2) =================
+    # ================= MODALS =================
 
     @allure.step("Принудительное закрытие всех модальных окон")
     def force_close_modals(self):
