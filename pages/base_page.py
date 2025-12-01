@@ -1,5 +1,5 @@
 # pages/base_page.py
-# version: v1.8
+# version: v1.9
 
 import allure
 from selenium.webdriver.support.ui import WebDriverWait
@@ -125,6 +125,17 @@ class BasePage:
     def get_text(self, locator, timeout: int | None = None) -> str:
         element = self.wait_for_visible(locator, timeout)
         return element.text
+
+    # ================= SCROLL =================
+
+    @allure.step("Прокрутить страницу до элемента")
+    def scroll_into_view(self, locator, timeout: int | None = None):
+        element = self.wait_for_visible(locator, timeout)
+        self.driver.execute_script(
+            "arguments[0].scrollIntoView({block: 'center'});",
+            element,
+        )
+        return element
 
     # ================= JS =================
 
